@@ -18,21 +18,8 @@ export default function LandingPage() {
 
   const handleAnalyze = () => {
     if (!url) return;
-    setIsProcessing(true);
-    
-    // Save a mock result for the YouTube link so it shows as COMPLETED in library
-    localStorage.setItem('lastAnalysis', JSON.stringify({
-      title: "YouTube: " + url.substring(0, 30) + "...",
-      date: new Date().toLocaleDateString(),
-      matchType: 'PROFESSIONAL',
-      possession: '54%',
-      xg: '1.62',
-      summary: "Tactical extraction completed from video stream. High technical symmetry detected. Team A maintaining mid-block structure.",
-      playerStats: [
-        { num: "09", name: "Striker Alpha", role: "Forward", rating: "8.5", passes: "22/25", int: "1", speed: "34.2", efficiency: 85 },
-        { num: "05", name: "Wall Master", role: "Defender", rating: "7.9", passes: "45/48", int: "12", speed: "28.5", efficiency: 90 },
-      ]
-    }));
+    // For now, URL analysis is disabled as we prioritize real file uploads
+    alert("Analysis for URLs is coming soon. Please use the 'Upload Video' option for real-time AI extraction.");
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

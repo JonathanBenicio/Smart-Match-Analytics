@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { TacticalRadar } from '@/components/charts/tactical-radar';
 import { Download, Users, Target, Zap, Info, Play, Crosshair, Layers, ChevronRight, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function AnalysisPage() {
   const [data, setData] = useState<any>(null);
@@ -23,19 +24,18 @@ export default function AnalysisPage() {
     </div>
   );
 
-  const displayData = data || {
-    title: 'London titans vs. madrid eagles',
-    date: 'Premier League Week 24 • Emirates Stadium • 2024-03-15',
-    matchType: 'PROFESSIONAL',
-    possession: '64%',
-    xg: '2.84',
-    summary: '"Marcus Vane is operating at 92% pass accuracy. His positioning in the final third has created 4 high-probability scoring chances in the last 15 minutes."',
-    playerStats: [
-      { num: "10", name: "Marcus Vane", role: "Midfielder", rating: "9.4", passes: "88/94", int: "12", speed: "32.4", efficiency: 92, color: "text-primary" },
-      { num: "04", name: "Erik Larsen", role: "Defender", rating: "8.1", passes: "42/48", int: "18", speed: "29.1", efficiency: 84, color: "text-secondary" },
-      { num: "07", name: "Luca Modric", role: "Forward", rating: "7.8", passes: "65/78", int: "04", speed: "31.8", efficiency: 75, color: "text-on-surface-variant" },
-      { num: "21", name: "S. Grealish", role: "Winger", rating: "7.2", passes: "30/41", int: "02", speed: "34.1", efficiency: 55, color: "text-error" },
-    ]
+  const hasData = !!data;
+  const displayData = {
+    title: data?.title || 'Tactical Dashboard',
+    date: data?.date || 'Ready for analysis',
+    matchType: data?.matchType || 'NONE',
+    possession: data?.possession || '--%',
+    xg: data?.xg || '0.00',
+    summary: data?.summary || 'No footage analyzed yet. Upload a video to extract tactical insights.',
+    playerStats: Array.isArray(data?.playerStats) && data.playerStats.length > 0 ? data.playerStats : (hasData ? [] : [
+      { num: "??", name: "Select Video", role: "N/A", rating: "--", passes: "0/0", int: "0", speed: "0", efficiency: 0, color: "text-on-surface-variant" },
+    ]),
+    playerPositions: Array.isArray(data?.playerPositions) ? data.playerPositions : []
   };
 
   return (
@@ -121,11 +121,24 @@ export default function AnalysisPage() {
               <div className="absolute right-0 top-1/4 bottom-1/4 w-12 border-l border-y border-white/10"></div>
             </div>
 
-            {/* Simulated Data Points */}
-            <PlayerDot top="40%" left="30%" />
-            <PlayerDot top="60%" left="70%" />
-            <PlayerDot top="35%" left="65%" color="secondary" />
-            <PlayerDot top="75%" left="25%" color="secondary" />
+            {/* AI Extracted Data Points */}
+            {displayData.playerPositions.length > 0 ? (
+              displayData.playerPositions.map((pos: any, idx: number) => (
+                <PlayerDot 
+                  key={idx} 
+                  top={`${pos.y}%`} 
+                  left={`${pos.x}%`} 
+                  color={pos.team === 'A' || pos.team === 'LONDON' ? 'primary' : 'secondary'} 
+                />
+              ))
+            ) : (
+              <>
+                <PlayerDot top="40%" left="30%" />
+                <PlayerDot top="60%" left="70%" />
+                <PlayerDot top="35%" left="65%" color="secondary" />
+                <PlayerDot top="75%" left="25%" color="secondary" />
+              </>
+            )}
 
             <div className="absolute top-4 right-4 flex flex-col gap-1.5 z-10">
               <ControlButton icon={<Crosshair />} />
@@ -168,6 +181,15 @@ export default function AnalysisPage() {
         <div className="md:col-span-12 xl:col-span-3 space-y-4 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-1 items-start content-start">
           <StatCard title="Possession" value={displayData.possession} icon={<Zap />} color="primary" trend="+4.2% VS AVG" />
           <StatCard title="XG" value={displayData.xg} icon={<Target />} color="secondary" desc="HIGH EFFICIENCY" />
+          
+          <Link href="/analysis/report" className="glass-panel p-4 rounded-xl border border-primary/20 hover:bg-primary/5 transition-all group flex flex-col items-center justify-center gap-2 md:col-span-3 xl:col-span-1">
+            <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Advanced Analysis</span>
+            <span className="font-display font-black text-on-surface text-xl">VIEW MATCH REPORT</span>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-on-surface-variant group-hover:text-primary transition-colors">
+              CLICK TO EXPAND <ChevronRight className="w-3 h-3" />
+            </div>
+          </Link>
+
           <div className="glass-panel p-5 rounded-xl md:col-span-3 xl:col-span-1 border-t-2 border-t-white/10 relative overflow-hidden group">
             <h3 className="font-bold text-xs text-on-surface mb-6 uppercase tracking-widest text-center">Tactical Symmetry</h3>
             <div className="aspect-square relative -m-4">
