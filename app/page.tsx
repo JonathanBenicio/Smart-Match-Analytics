@@ -1,205 +1,168 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Youtube, Upload, Play, ArrowRight, Shield, Zap, Target, Cpu, ChevronRight, Check } from 'lucide-react';
+import { useState } from 'react';
+import { Play, Upload, Shield, Zap, Target, ArrowRight, BrainCircuit, Youtube, Activity } from 'lucide-react';
 import Link from 'next/link';
-import { motion } from 'motion/react';
-import { ProcessingHud } from '@/components/analysis/processing-hud';
 import { useRouter } from 'next/navigation';
 import { analyzeVideoFootage } from '@/lib/analysis-service';
 
 export default function LandingPage() {
-  const [url, setUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [isAnalyzingFile, setIsAnalyzingFile] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [url, setUrl] = useState('');
   const router = useRouter();
-
-  const handleAnalyze = () => {
-    if (!url) return;
-    // For now, URL analysis is disabled as we prioritize real file uploads
-    alert("Analysis for URLs is coming soon. Please use the 'Upload Video' option for real-time AI extraction.");
-  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsProcessing(true);
     try {
-      setIsAnalyzingFile(true);
-      const stats = await analyzeVideoFootage(file);
-      
-      localStorage.setItem('lastAnalysis', JSON.stringify({
-        ...stats,
-        title: file.name,
-        date: new Date().toLocaleDateString(),
-      }));
-
+      const result = await analyzeVideoFootage(file);
+      localStorage.setItem('lastAnalysis', JSON.stringify(result));
       router.push('/analysis');
-    } catch (err) {
-      console.error(err);
-      alert("Analysis failed. Please try a different video.");
+    } catch (error) {
+      console.error(error);
+      alert("Analysis failed. Please try a shorter clip or different format.");
     } finally {
-      setIsAnalyzingFile(false);
+      setIsProcessing(false);
     }
   };
 
-  useEffect(() => {
-    if (isProcessing) {
-      const timer = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(timer);
-            setTimeout(() => router.push('/library'), 500);
-            return 100;
-          }
-          return prev + 1;
-        });
-      }, 50);
-      return () => clearInterval(timer);
-    }
-  }, [isProcessing, router]);
-
   return (
-    <div className="flex flex-col min-h-[calc(100vh-64px)] w-full overflow-hidden relative">
-      
-      {isProcessing && <ProcessingHud progress={progress} />}
-      
-      {isAnalyzingFile && (
-        <div className="fixed inset-0 z-[70] bg-background flex flex-col items-center justify-center p-8 text-center space-y-6">
-          <div className="relative w-32 h-32">
-             <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
-             <div className="absolute inset-4 rounded-full border-4 border-secondary/20 border-b-secondary animate-[spin_3s_linear_infinite]"></div>
-             <div className="absolute inset-0 flex items-center justify-center">
-                <Target className="w-8 h-8 text-primary animate-pulse" />
-             </div>
-          </div>
-          <h2 className="text-2xl font-display font-extrabold text-on-surface uppercase tracking-tight">AI Neural Extraction...</h2>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Background Glows */}
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[120px] rounded-full animate-pulse"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-secondary/10 blur-[120px] rounded-full"></div>
+
+      <nav className="relative z-10 flex border-b border-white/5 bg-black/20 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto w-full px-6 h-16 flex items-center justify-between">
+           <div className="flex items-center gap-2 group cursor-pointer">
+              <div className="w-8 h-8 bg-primary rounded flex items-center justify-center p-1.5 rotate-3 group-hover:rotate-0 transition-transform">
+                <Play className="fill-black stroke-black w-full h-full" />
+              </div>
+              <span className="font-display font-black text-xl tracking-tighter">ELITE ANALYTICS</span>
+           </div>
+           <div className="hidden md:flex items-center gap-8 text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">
+              <Link href="#" className="hover:text-primary transition-colors">Tactical Engine</Link>
+              <Link href="/library" className="hover:text-primary transition-colors">Match Library</Link>
+              <Link href="#" className="hover:text-primary transition-colors">API Docs</Link>
+           </div>
         </div>
-      )}
+      </nav>
 
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full -z-10 opacity-20 pointer-events-none">
-        <div className="absolute top-[10%] left-[10%] w-96 h-96 bg-primary rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-[20%] right-[10%] w-[30rem] h-[30rem] bg-secondary rounded-full blur-[150px]"></div>
-      </div>
+      <main className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-32">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8">
+                <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
+                   <div className="w-2 h-2 rounded-full bg-primary animate-ping"></div>
+                   <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Live Extraction Engine active</span>
+                </div>
+                <h1 className="text-6xl md:text-8xl font-display font-black text-on-surface leading-[0.9] uppercase tracking-tighter">
+                   Extract <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Tactical DNA</span> From Any Match.
+                </h1>
+                <p className="text-on-surface-variant text-lg font-medium leading-relaxed max-w-lg">
+                   The most advanced soccer visualization suite powered by Gemini Vision. Upload match footage or practice clips to extract coordinates, patterns, and performance metrics in seconds.
+                </p>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-24 relative z-10">
-        
-        {/* Badge */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-3 py-1 bg-surface-container border border-white/10 rounded-full mb-8 shadow-inner"
-        >
-          <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
-          <span className="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">V2.0 Core Active</span>
-        </motion.div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <label className="flex-1 bg-primary text-black h-16 flex items-center justify-center gap-2 rounded-2xl font-display font-black text-lg hover:scale-[1.02] transition-all cursor-pointer shadow-[0_0_40px_rgba(30,215,96,0.2)]">
+                      <input type="file" className="hidden" accept="video/*" onChange={handleFileUpload} disabled={isProcessing} />
+                      {isProcessing ? (
+                        <>
+                          <BrainCircuit className="animate-pulse" /> EXTRACTING DATA...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-5 h-5" /> UPLOAD VIDEO FILE
+                        </>
+                      )}
+                  </label>
+                  <Link href="/library" className="flex-1 glass-panel text-on-surface h-16 flex items-center justify-center gap-2 rounded-2xl font-display font-black text-lg hover:bg-white/10 transition-all border border-white/10">
+                      EXPLORE LIBRARY
+                  </Link>
+                </div>
 
-        {/* Hero Title */}
-        <motion.div
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           transition={{ delay: 0.1 }}
-           className="text-center space-y-4 max-w-4xl"
-        >
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-extrabold tracking-tighter text-on-surface leading-[0.9]">
-            ANALYZE ANY MATCH.<br/>
-            <span className="text-primary italic">ZERO EFFORT.</span>
-          </h1>
-          <p className="text-on-surface-variant text-lg md:text-xl font-body max-w-2xl mx-auto leading-relaxed">
-            Upload footage or paste a YouTube link. Our neural engine extracts 
-            <span className="text-secondary font-bold"> positional data, tactical graphs, and player metrics</span> in minutes.
-          </p>
-        </motion.div>
-
-        {/* Action Center */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mt-12 w-full max-w-2xl space-y-6"
-        >
-          <div className="glass-panel p-2 rounded-3xl border border-white/10 shadow-2xl focus-within:ring-2 focus-within:ring-primary/40 transition-all flex flex-col md:flex-row gap-2">
-            <div className="flex-1 flex items-center px-4 py-3 md:py-0 border-b md:border-b-0 md:border-r border-white/5">
-              <Youtube className="w-5 h-5 text-error mr-3" />
-              <input 
-                type="text" 
-                placeholder="Paste YouTube Match URL..."
-                className="bg-transparent border-none focus:ring-0 focus:outline-none w-full text-on-surface placeholder:text-on-surface-variant text-sm md:text-base font-medium"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
+                <div className="space-y-4 pt-8">
+                   <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg"><Zap className="w-4 h-4 text-primary" /></div>
+                      <div>
+                         <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface">Precision Tracking</h3>
+                         <p className="text-[10px] text-on-surface-variant font-bold">X,Y COORDINATES MAPPED IN REAL-TIME</p>
+                      </div>
+                   </div>
+                </div>
             </div>
-            <button 
-              onClick={handleAnalyze}
-              className={`px-8 py-4 bg-primary text-on-primary rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 ${!url && 'opacity-50 cursor-not-allowed'}`}
-            >
-              Analyze Link <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
 
-          <div className="flex items-center justify-center gap-8">
-            <div className="flex items-center gap-2 text-on-surface-variant/60">
-              <Check className="w-4 h-4 text-primary" />
-              <span className="text-[10px] uppercase font-bold tracking-widest">Deep Tracking</span>
+            <div className="relative">
+               <div className="glass-panel aspect-[4/3] rounded-[40px] p-2 overflow-hidden relative shadow-2xl group">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
+                  <img 
+                    src="https://picsum.photos/seed/soccer-tactic/1000/800" 
+                    alt="Tactical Visualization" 
+                    className="w-full h-full object-cover rounded-[32px] grayscale-[0.2] group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute bottom-8 left-8 right-8 z-20 space-y-4">
+                     <div className="flex items-center gap-4">
+                        <div className="glass-panel px-4 py-2 rounded-full text-[10px] font-bold text-primary flex items-center gap-2">
+                           <Shield className="w-3 h-3" /> MATCH ID: 7741-B
+                        </div>
+                        <div className="glass-panel px-4 py-2 rounded-full text-[10px] font-bold text-secondary flex items-center gap-2">
+                           <Activity className="w-3 h-3" /> ACTIVE TRACKING
+                        </div>
+                     </div>
+                     <div className="h-px w-full bg-white/20"></div>
+                     <div className="flex justify-between items-end">
+                        <div>
+                           <div className="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Current Play</div>
+                           <div className="text-2xl font-display font-black uppercase tracking-tight">High-Press Invariant</div>
+                        </div>
+                        <div className="text-primary font-display font-black text-3xl">78%</div>
+                     </div>
+                  </div>
+               </div>
+               
+               {/* Floating Badges */}
+               <div className="absolute -top-6 -right-6 glass-panel p-4 rounded-3xl animate-bounce duration-[3s]">
+                  <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center"><Target className="text-black" /></div>
+                     <div>
+                        <div className="text-[8px] font-bold text-on-surface-variant uppercase tracking-widest">Expected Goals</div>
+                        <div className="text-xl font-display font-black">2.84</div>
+                     </div>
+                  </div>
+               </div>
             </div>
-            <div className="flex items-center gap-2 text-on-surface-variant/60">
-              <Check className="w-4 h-4 text-primary" />
-              <span className="text-[10px] uppercase font-bold tracking-widest">Heatmap Gen</span>
-            </div>
-            <div className="flex items-center gap-2 text-on-surface-variant/60">
-              <Check className="w-4 h-4 text-primary" />
-              <span className="text-[10px] uppercase font-bold tracking-widest">Tactical Replay</span>
-            </div>
-          </div>
-        </motion.div>
+        </div>
 
-        {/* "Or Upload" section */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-16 text-center"
-        >
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept="video/*"
-            onChange={handleFileUpload}
-          />
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="group flex flex-col items-center gap-4 cursor-pointer"
-          >
-            <div className="w-16 h-16 rounded-full bg-surface-container-high border border-white/10 flex items-center justify-center p-4 group-hover:bg-primary/10 group-hover:border-primary transition-all duration-300">
-               <Upload className="w-6 h-6 text-on-surface-variant group-hover:text-primary group-hover:scale-110 transition-all" />
-            </div>
-            <span className="text-xs font-bold text-on-surface-variant tracking-widest uppercase group-hover:text-on-surface">Or upload direct footage</span>
-          </button>
-        </motion.div>
+        {/* FAQ - YouTube Question */}
+        <div className="mt-40 max-w-2xl mx-auto space-y-12">
+           <h2 className="text-3xl font-display font-black text-center uppercase tracking-tight">Technical Architecture</h2>
+           <div className="space-y-6">
+              <div className="glass-panel p-6 rounded-2xl border-l-4 border-primary">
+                 <h3 className="font-bold text-sm uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <Youtube className="w-4 h-4 text-red-500" /> YouTube Analysis?
+                 </h3>
+                 <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
+                    Due to browser security protocols, direct YouTube link analysis is currenty indirect. We recommend downloading the clip or using screen recording and uploading the file. The Gemini Vision engine works with real file streams for maximum detail extraction.
+                 </p>
+              </div>
+              <div className="glass-panel p-6 rounded-2xl border-l-4 border-secondary">
+                 <h3 className="font-bold text-sm uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <BrainCircuit className="w-4 h-4 text-secondary" /> AI Accuracy?
+                 </h3>
+                 <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
+                    We use a multi-step "Chain of Thought" extraction. The AI (Gemini 1.5 Pro) first describes the visual scene, categorizes the match level, and then maps spatial data to a calibrated 100x100 grid. This avoids hallucinations and provides data grounded in visual evidence.
+                 </p>
+              </div>
+           </div>
+        </div>
       </main>
 
-      {/* Feature Grids (Visual only for now) */}
-      <section className="mt-auto py-12 border-t border-white/5 bg-surface-container/30 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
-           <MinimalFeature icon={<Cpu />} title="Neural Tracking" desc="Sub-pixel precision" />
-           <MinimalFeature icon={<Target />} title="XG Analysis" desc="Probability modeling" />
-           <MinimalFeature icon={<Shield />} title="Defensive Mesh" desc="Cover shadow detection" />
-           <MinimalFeature icon={<Zap />} title="Real-time Feed" desc="Low-latency engine" />
+      <footer className="relative z-10 border-t border-white/5 py-12 bg-black/40">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+           <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">© 2024 Elite Football Analytics • Built with Gemini Vision Pro</p>
         </div>
-      </section>
-    </div>
-  );
-}
-
-function MinimalFeature({ icon, title, desc }: { icon: React.ReactNode; title: string, desc: string }) {
-  return (
-    <div className="flex flex-col items-center text-center md:items-start md:text-left">
-      <div className="text-primary/60 mb-3 [&>svg]:w-5 [&>svg]:h-5">{icon}</div>
-      <div className="text-[11px] font-bold text-on-surface uppercase tracking-widest mb-1">{title}</div>
-      <div className="text-[10px] text-on-surface-variant leading-tight">{desc}</div>
+      </footer>
     </div>
   );
 }

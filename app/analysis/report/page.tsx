@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, Target, Zap, Activity, Clock, ChevronLeft, Download, Share2, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { Shield, Target, Zap, Activity, Clock, ChevronLeft, Download, Share2, TrendingUp, TrendingDown, Loader2, BrainCircuit } from 'lucide-react';
 import Link from 'next/link';
+import { TacticalRadar } from '@/components/charts/tactical-radar';
 
 export default function MatchReportPage() {
   const [data, setData] = useState<any>(null);
@@ -30,15 +31,16 @@ export default function MatchReportPage() {
     xg: data?.xg || '0.00',
     pressing: data?.pressingIntensity || '0',
     summary: data?.summary || 'No data available.',
-    momentum: Array.isArray(data?.matchMomentum) ? data.matchMomentum : Array.from({ length: 40 }).map(() => Math.random() * 100)
+    momentum: Array.isArray(data?.matchMomentum) ? data.matchMomentum : Array.from({ length: 40 }).map(() => Math.random() * 100),
+    visualReasoning: data?.raciocinio_visual || 'No visual reasoning available for this snapshot.'
   };
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8 pb-24">
       {/* Header */}
-      <div className="flex justify-between items-center bg-surface-container p-4 rounded-2xl border border-white/10 shadow-xl">
-        <Link href="/analysis" className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-          <ChevronLeft className="w-5 h-5 text-on-surface-variant hover:text-primary" />
+      <div className="flex items-center gap-4">
+        <Link href="/analysis" className="p-2 hover:bg-white/5 rounded-lg text-on-surface-variant hover:text-primary transition-colors">
+          <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1 text-center">
           <div className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Final Tactical Report</div>
@@ -48,10 +50,10 @@ export default function MatchReportPage() {
         </div>
         <div className="flex gap-2">
            <button className="p-2 hover:bg-white/5 rounded-lg text-on-surface-variant hover:text-primary">
-             <Download className="w-4 h-4" />
+              <Share2 className="w-5 h-5" />
            </button>
-           <button className="p-2 hover:bg-white/5 rounded-lg text-on-surface-variant hover:text-primary">
-             <Share2 className="w-4 h-4" />
+           <button className="bg-primary text-black p-2 rounded-lg font-bold">
+              <Download className="w-5 h-5" />
            </button>
         </div>
       </div>
@@ -76,25 +78,42 @@ export default function MatchReportPage() {
                 ></div>
               ))}
            </div>
-           <div className="flex justify-between mt-2 px-2 text-[10px] font-bold text-on-surface-variant/40">
-             <span>0'</span>
-             <span>HT</span>
-             <span>90'</span>
+           <div className="mt-4 flex justify-between text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+              <span>0'</span>
+              <span>KICKOFF BALANCE</span>
+              <span>15' (CLIP)</span>
            </div>
         </div>
 
         {/* Tactical Summary Cards */}
         <ReportMetric title="Field Possession" value={displayData.possession} trend="+-" icon={<Activity />} color="primary" />
-        <ReportMetric title="Pressing Intensity" value={displayData.pressing} trend="+-" icon={<Zap />} color="secondary" />
+        <ReportMetric title="Pressing Intensity" value={displayData.pressing} trend="1-10" icon={<Zap />} color="secondary" />
         <ReportMetric title="Expected Goals (xG)" value={displayData.xg} trend="+-" icon={<Target />} color="tertiary" />
         <ReportMetric title="Match Duration" value="Clip Segment" trend="0" icon={<Clock />} color="primary" />
       </div>
 
+      {/* Chain of Thought Section - NEW BASED ON PLAN */}
+      <div className="glass-panel p-8 rounded-3xl border-l-4 border-secondary">
+         <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-secondary/10 rounded-lg">
+                <BrainCircuit className="w-5 h-5 text-secondary" />
+            </div>
+            <h2 className="text-xl font-display font-bold text-on-surface uppercase tracking-tight text-secondary">Visual Reasoning (AI Chain-of-Thought)</h2>
+         </div>
+         <div className="bg-black/40 p-5 rounded-2xl border border-white/5 italic">
+            <p className="text-sm text-on-surface-variant leading-relaxed">
+              {displayData.visualReasoning}
+            </p>
+         </div>
+      </div>
+
       {/* Narrative Section */}
-      <div className="glass-panel p-8 rounded-3xl space-y-6">
-         <div className="flex items-center gap-3 mb-2">
-            <div className="w-1.5 h-6 bg-primary rounded-full"></div>
-            <h2 className="text-xl font-display font-bold text-on-surface uppercase">AI Tactical Overview</h2>
+      <div className="glass-panel p-8 rounded-3xl border-b-4 border-primary">
+         <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-primary/10 rounded-lg">
+                <Activity className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-display font-bold text-on-surface uppercase">Tactical Summary</h2>
          </div>
          <p className="text-sm text-on-surface-variant leading-relaxed font-medium">
            {displayData.summary}
@@ -107,7 +126,7 @@ export default function MatchReportPage() {
             </div>
             <div className="bg-error/5 border border-error/20 p-4 rounded-2xl">
                <h4 className="text-[10px] font-bold text-error uppercase tracking-widest mb-2">Extraction Note</h4>
-               <p className="text-xs text-on-surface font-semibold">Coordinates mapped to standard 105x68 pitch model. Some blurring may affect marginal precision.</p>
+               <p className="text-xs text-on-surface font-semibold">Coordinates mapped to standard 105x68 pitch model. Movement categorization based on biomechanical analysis.</p>
             </div>
          </div>
       </div>
@@ -120,20 +139,20 @@ function ReportMetric({ title, value, trend, icon, color }: { title: string, val
     primary: 'text-primary border-primary/20',
     secondary: 'text-secondary border-secondary/20',
     tertiary: 'text-tertiary border-tertiary/20'
-  }
-  
+  };
+
   return (
-    <div className="glass-panel p-5 rounded-2xl border flex justify-between items-center group hover:scale-[1.02] transition-transform">
-      <div className="flex gap-4 items-center">
-        <div className={`p-3 bg-surface-container rounded-xl ${colors[color].split(' ')[0]} border border-white/5`}>
-          {icon}
-        </div>
-        <div>
-          <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-0.5">{title}</div>
+    <div className="glass-panel p-5 rounded-2xl flex flex-col gap-4 group hover:bg-white/[0.05] transition-all">
+      <div className="flex items-center justify-between">
+        <div className={`p-2 rounded-lg bg-surface border ${colors[color]}`}>{icon}</div>
+        <div className="text-right">
+          <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{title}</div>
           <div className="text-2xl font-display font-extrabold text-on-surface tracking-tight">{value}</div>
         </div>
+      </div>
+      <div className="flex items-center gap-1 text-[10px] font-bold text-on-surface-variant">
+        Scale/Trend: {trend}
       </div>
     </div>
   );
 }
-
