@@ -1,84 +1,240 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Play, Search, Filter, Calendar, Users, ChevronRight, LayoutGrid, List } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Search, Filter, Play, Clock, CheckCircle2, AlertCircle, Calendar, Users, ExternalLink, MoreVertical, X, Upload, Youtube, Loader2, Activity } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { analyzeVideoFootage } from '@/lib/analysis-service';
 
-const staticMatches = [
-  { id: '1', title: 'LONDON TITANS VS MADRID EAGLES', date: '2024-03-15', type: 'PROFESSIONAL', possession: '64%', xg: '2.84', rating: '9.4' },
-  { id: '2', title: 'TRAINING SESSION: HIGH PRESS', date: '2024-03-10', type: 'PRACTICE', possession: '52%', xg: '1.12', rating: '7.8' },
+const matches = [
+  {
+    id: '1',
+    title: 'London Titans vs Madrid Eagles',
+    date: '15 Mar 2024',
+    status: 'COMPLETED',
+    matchType: 'PROFESSIONAL',
+    thumbnail: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800&auto=format&fit=crop',
+    duration: '94:00',
+    accuracy: '98.2%',
+    players: 22,
+  },
 ];
 
 export default function LibraryPage() {
-  const [dynamicMatches, setDynamicMatches] = useState<any[]>([]);
+  const [showUpload, setShowUpload] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dynamicMatches, setDynamicMatches] = useState(matches);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    // Check for saved analysis on load
     const saved = localStorage.getItem('lastAnalysis');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setDynamicMatches([{ ...parsed, id: 'recent', date: parsed.date || 'Recent' }]);
+      try {
+        const parsed = JSON.parse(saved);
+        setDynamicMatches(prev => {
+          // Prevent duplicates if already added
+          if (prev.some(m => m.id === 'new-1')) return prev;
+          
+          return [{
+            id: 'new-1',
+            title: parsed.title,
+            date: parsed.date,
+            status: 'COMPLETED',
+            thumbnail: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800&auto=format&fit=crop',
+            matchType: parsed.matchType || 'AMATEUR',
+            ...parsed
+          }, ...prev];
+        });
+      } catch (e) {}
     }
   }, []);
 
-  const allMatches = [...dynamicMatches, ...staticMatches];
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsAnalyzing(true);
+      setError(null);
+      const stats = await analyzeVideoFootage(file);
+      
+      // Save result to localStorage for the analysis page to pick up
+      localStorage.setItem('lastAnalysis', JSON.stringify({
+        ...stats,
+        title: file.name,
+        date: new Date().toLocaleDateString(),
+        thumbnail: URL.createObjectURL(file) // Note: this will only work in current session
+      }));
+
+      // Small delay for effect
+      await new Promise(r => setTimeout(r, 1000));
+      router.push('/analysis');
+    } catch (err) {
+      console.error(err);
+      setError("AI Analysis failed. Make sure you are using a supported video file.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen p-6 md:p-12 space-y-12 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-white/5">
-        <div>
-          <div className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] mb-3">Tactical Archive</div>
-          <h1 className="text-4xl font-display font-black text-on-surface uppercase tracking-tighter">Match Library</h1>
-        </div>
-        <div className="flex gap-4">
-          <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-            <button className="p-2 bg-primary text-black rounded-lg shadow-lg"><LayoutGrid className="w-4 h-4" /></button>
-            <button className="p-2 text-on-surface-variant hover:text-primary"><List className="w-4 h-4" /></button>
+    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-24">
+      {/* Upload Modal */}
+      {showUpload && !isAnalyzing && (
+        <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg glass-panel p-6 rounded-3xl border border-white/10 shadow-2xl relative">
+            <button 
+              onClick={() => setShowUpload(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-on-surface-variant" />
+            </button>
+            <h2 className="text-2xl font-display font-bold text-on-surface mb-6 uppercase tracking-tighter">New Analysis</h2>
+            
+            <div className="space-y-4">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="video/*"
+                onChange={handleFileUpload}
+              />
+
+              <div className="p-4 bg-surface-container rounded-2xl border border-white/5">
+                <label className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2">Import from YouTube</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-surface/50 border border-white/10 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    <Youtube className="w-4 h-4 text-error" />
+                    <input type="text" placeholder="https://youtube.com/watch?v=..." className="bg-transparent border-none focus:ring-0 text-sm w-full font-medium" />
+                  </div>
+                  <button className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-primary/20">Fetch</button>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="p-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
+              >
+                <div className="w-12 h-12 rounded-full bg-surface-container-high border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                   <Upload className="w-6 h-6 text-on-surface-variant group-hover:text-primary" />
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold text-on-surface">Upload Match Video</div>
+                  <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest mt-1">Drag and drop files here</div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-error/10 border border-error/20 rounded-xl text-error text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" /> {error}
+                </div>
+              )}
+
+              <button className="w-full bg-primary/20 text-on-surface-variant py-4 rounded-2xl font-bold cursor-not-allowed opacity-50">
+                Start Neural Engine
+              </button>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Analyzing Overlay */}
+      {isAnalyzing && (
+        <div className="fixed inset-0 z-[70] bg-background flex flex-col items-center justify-center p-8 text-center space-y-6">
+          <div className="relative w-32 h-32">
+             <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
+             <div className="absolute inset-4 rounded-full border-4 border-secondary/20 border-b-secondary animate-[spin_3s_linear_infinite]"></div>
+             <div className="absolute inset-0 flex items-center justify-center">
+                <Activity className="w-8 h-8 text-primary animate-pulse" />
+             </div>
+          </div>
+          <div>
+            <h2 className="text-2xl font-display font-extrabold text-on-surface uppercase tracking-tight mb-2">Neural Extraction in progress</h2>
+            <p className="text-on-surface-variant text-sm max-w-md mx-auto">Gemini 3.1 Pro is processing tactical coordinates and identifying player hotspots. please dont close this window.</p>
+          </div>
+          <div className="w-full max-w-sm h-1 bg-surface-container rounded-full overflow-hidden">
+             <div className="h-full bg-primary animate-[shimmer_2s_infinite] w-full origin-left"></div>
+          </div>
+        </div>
+      )}
+
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-extrabold text-on-surface tracking-tight uppercase">Video Library</h1>
+          <p className="text-on-surface-variant text-sm mt-1">Access and manage all tactical extractions</p>
+        </div>
+        
+        <div className="flex gap-2">
+          <button className="glass-panel px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-white/5 transition-colors">
+            <Filter className="w-4 h-4" /> Filters
+          </button>
+          <button 
+            onClick={() => setShowUpload(true)}
+            className="bg-primary text-on-primary px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+          >
+            Analyze New Match
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {allMatches.map((match) => (
-          <Link href="/analysis" key={match.id} className="group relative glass-panel rounded-[32px] p-2 hover:border-primary/40 transition-all">
-            <div className="aspect-video rounded-[24px] overflow-hidden relative">
-               <img src={`https://picsum.photos/seed/${match.id}/600/400`} alt="" className="w-full h-full object-cover grayscale-[0.4] group-hover:scale-105 transition-transform duration-500" />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-               <div className="absolute top-4 left-4 glass-panel px-3 py-1 rounded-full text-[8px] font-black tracking-widest text-primary border-primary/20">
-                 {match.type}
-               </div>
-               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                  <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 group-hover:bg-primary transition-colors">
-                    <Play className="w-4 h-4 text-white group-hover:text-black fill-current" />
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] font-bold text-on-surface-variant uppercase">Player Rating</div>
-                    <div className="text-xl font-display font-black text-primary">{match.rating}</div>
-                  </div>
-               </div>
-            </div>
-            <div className="p-6 space-y-4">
-               <div>
-                  <h3 className="font-display font-black text-lg text-on-surface uppercase leading-tight group-hover:text-primary transition-colors">
-                    {match.title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Calendar className="w-3 h-3 text-on-surface-variant" />
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{match.date}</span>
-                  </div>
-               </div>
-               <div className="flex gap-4 pt-2">
-                  <div className="flex-1 text-center py-3 bg-white/5 rounded-2xl border border-white/5">
-                    <div className="text-[8px] font-bold text-on-surface-variant uppercase mb-1">Possession</div>
-                    <div className="text-sm font-bold text-on-surface">{match.possession}</div>
-                  </div>
-                  <div className="flex-1 text-center py-3 bg-white/5 rounded-2xl border border-white/5">
-                    <div className="text-[8px] font-bold text-on-surface-variant uppercase mb-1">Total xG</div>
-                    <div className="text-sm font-bold text-on-surface">{match.xg}</div>
-                  </div>
-               </div>
-            </div>
-          </Link>
+      {/* Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {dynamicMatches.map((match) => (
+          <MatchCard key={match.id} match={match} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function MatchCard({ match }: { match: any }) {
+  return (
+    <div className="group glass-panel rounded-2xl overflow-hidden border border-white/5 hover:border-primary/30 transition-all duration-300 flex flex-col">
+      <div className="relative aspect-video overflow-hidden">
+        <Image 
+          src={match.thumbnail} 
+          alt={match.title}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-700"
+          referrerPolicy="no-referrer"
+        />
+        {match.matchType && (
+          <div className="absolute top-3 left-3 z-10">
+            <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold tracking-widest border border-white/10 ${
+              match.matchType === 'PROFESSIONAL' ? 'bg-primary/20 text-primary border-primary/20' : 
+              match.matchType === 'AMATEUR' ? 'bg-secondary/20 text-secondary border-secondary/20' : 
+              'bg-surface-container-highest text-on-surface-variant'
+            }`}>
+              {match.matchType}
+            </span>
+          </div>
+        )}
+        {match.status === 'PROCESSING' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-[2px]">
+             <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-3"></div>
+             <div className="text-primary font-bold text-[10px] uppercase tracking-widest">Analyzing {match.progress}%</div>
+          </div>
+        )}
+      </div>
+      <div className="p-4 space-y-4">
+        <h3 className="font-bold text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{match.title}</h3>
+        <div className="flex justify-between items-center pt-2 border-t border-white/5">
+          <div className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">{match.date}</div>
+          {match.status === 'COMPLETED' ? (
+            <Link href="/analysis" className="text-primary hover:text-white font-bold text-[10px] uppercase tracking-widest flex items-center gap-1.5 transition-colors">
+              Tactical View <Play className="w-3 h-3" />
+            </Link>
+          ) : (
+             <div className="text-on-surface-variant font-bold text-[10px] uppercase tracking-widest flex items-center gap-1.5">
+               Queued <Clock className="w-3 h-3" />
+             </div>
+          )}
+        </div>
       </div>
     </div>
   );

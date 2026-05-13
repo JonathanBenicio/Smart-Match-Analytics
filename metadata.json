@@ -1,5 +1,6 @@
 {
-  "name": "Elite Football Analytics",
-  "description": "Professional-grade tactical extraction from football video using Gemini Vision.",
-  "requestFramePermissions": []
+  "name": "APEX Analytics",
+  "description": "Elite high-performance sports analytics platform with neural tracking and tactical insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }
